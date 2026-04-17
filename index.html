@@ -6,6 +6,14 @@
 <title>Birthday Frame Generator</title>
 
 <style>
+    /* ✅ CUSTOM FONT */
+    @font-face {
+        font-family: 'MyFont';
+        src: url('./fonts/MyFont.ttf') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+    }
+
     body {
         font-family: Arial, sans-serif;
         text-align: center;
@@ -37,7 +45,6 @@
         user-select: none;
     }
 
-    /* ✅ FRAME FIXED */
     #frame {
         position: absolute;
         top: 0;
@@ -48,6 +55,7 @@
         pointer-events: none;
     }
 
+    /* ✅ CUSTOM FONT APPLIED */
     #nameText {
         position: absolute;
         bottom: 30px;
@@ -55,6 +63,7 @@
         text-align: center;
         font-size: 35px;
         font-weight: bold;
+        font-family: 'MyFont', sans-serif;
         z-index: 5;
         text-shadow: 0 0 10px black;
         pointer-events: none;
@@ -83,7 +92,7 @@
     <img id="userImage" src="" style="display:none;">
     <div id="nameText"></div>
 
-    <!-- ✅ IMPORTANT: change path if needed -->
+    <!-- ✅ FRAME IMAGE -->
     <img id="frame" src="./Birthday.png">
 </div>
 
@@ -101,9 +110,9 @@ let scale = 1;
 let posX = 0, posY = 0;
 let dragging = false, startX, startY;
 
-// ✅ Check if frame loads
-frame.onload = () => console.log("Frame loaded successfully");
-frame.onerror = () => alert("Frame image not found! Check path.");
+// Frame check
+frame.onload = () => console.log("Frame loaded");
+frame.onerror = () => alert("Frame not found! Check file path.");
 
 // Upload Image
 upload.addEventListener("change", (e) => {
@@ -152,12 +161,15 @@ function updateTransform() {
     userImage.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
 }
 
-// Download Image
-function downloadImage() {
+// ✅ DOWNLOAD FUNCTION WITH FONT FIX
+async function downloadImage() {
     if (!userImage.src) {
         alert("Please upload an image first");
         return;
     }
+
+    // Wait for font
+    await document.fonts.load("bold 100px MyFont");
 
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
@@ -182,7 +194,7 @@ function downloadImage() {
     ctx.drawImage(userImage, -drawW/2, -drawH/2, drawW, drawH);
     ctx.restore();
 
-    // ✅ Ensure frame is loaded before drawing
+    // Draw frame
     if (frame.complete) {
         ctx.drawImage(frame, 0, 0, canvas.width, canvas.height);
     } else {
@@ -190,12 +202,13 @@ function downloadImage() {
         return;
     }
 
-    // Draw text
+    // Draw text with custom font
     ctx.fillStyle = "white";
-    ctx.font = `bold 100px Arial`;
+    ctx.font = "bold 100px MyFont";
     ctx.textAlign = "center";
     ctx.shadowColor = "black";
     ctx.shadowBlur = 15;
+
     ctx.fillText(nameInput.value, canvas.width / 2, canvas.height - 120);
 
     // Download
