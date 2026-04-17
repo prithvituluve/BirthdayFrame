@@ -6,7 +6,7 @@
 <title>Birthday Frame Generator</title>
 
 <style>
-    /* ✅ FIXED FONT PATH (lowercase filename) */
+    /* ✅ FONT FIXED (match filename exactly: myfont.ttf) */
     @font-face {
         font-family: 'MyFont';
         src: url('./fonts/myfont.ttf') format('truetype');
@@ -32,13 +32,15 @@
         border: 2px solid #333;
     }
 
+    /* ✅ NO CROPPING FIX */
     #userImage {
         position: absolute;
         top: 22%;
         left: 15%;
         width: 70%;
         height: 58%;
-        object-fit: cover;
+        object-fit: contain; /* 🔥 changed from cover */
+        background: black;
         border-radius: 30px;
         z-index: 1;
         cursor: move;
@@ -55,14 +57,13 @@
         pointer-events: none;
     }
 
-    /* ✅ CUSTOM FONT APPLIED */
+    /* ✅ FONT APPLIED */
     #nameText {
         position: absolute;
         bottom: 30px;
         width: 100%;
         text-align: center;
         font-size: 35px;
-        font-weight: bold;
         font-family: 'MyFont', sans-serif;
         z-index: 5;
         text-shadow: 0 0 10px black;
@@ -91,8 +92,6 @@
 <div class="container" id="container">
     <img id="userImage" src="" style="display:none;">
     <div id="nameText"></div>
-
-    <!-- ✅ Frame -->
     <img id="frame" src="./Birthday.png">
 </div>
 
@@ -110,8 +109,10 @@ let scale = 1;
 let posX = 0, posY = 0;
 let dragging = false, startX, startY;
 
-// Frame check
-frame.onerror = () => alert("Frame not found! Check path.");
+// Ensure font loaded
+document.fonts.ready.then(() => {
+    console.log("Font loaded");
+});
 
 // Upload Image
 upload.addEventListener("change", (e) => {
@@ -160,14 +161,13 @@ function updateTransform() {
     userImage.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
 }
 
-// ✅ FIXED DOWNLOAD FUNCTION
+// ✅ DOWNLOAD (MATCH PREVIEW)
 async function downloadImage() {
     if (!userImage.src) {
         alert("Please upload an image first");
         return;
     }
 
-    // ✅ Wait for font (NO bold here)
     await document.fonts.load("100px MyFont");
 
     const canvas = document.getElementById("canvas");
@@ -179,11 +179,9 @@ async function downloadImage() {
     canvas.width = WIDTH;
     canvas.height = HEIGHT;
 
-    // Background
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-    // Match preview proportions
     const imgX = WIDTH * 0.15;
     const imgY = HEIGHT * 0.22;
     const imgW = WIDTH * 0.70;
@@ -201,19 +199,17 @@ async function downloadImage() {
     ctx.drawImage(userImage, -imgW/2, -imgH/2, imgW, imgH);
     ctx.restore();
 
-    // Draw frame
     ctx.drawImage(frame, 0, 0, WIDTH, HEIGHT);
 
-    // Draw text
+    // ✅ FONT FIX (NO bold mismatch)
     ctx.fillStyle = "white";
-    ctx.font = "bold 100px MyFont";
+    ctx.font = "100px MyFont";
     ctx.textAlign = "center";
     ctx.shadowColor = "black";
     ctx.shadowBlur = 15;
 
     ctx.fillText(nameInput.value, WIDTH / 2, HEIGHT - 120);
 
-    // Download
     const link = document.createElement("a");
     link.download = "birthday_card.png";
     link.href = canvas.toDataURL("image/png");
@@ -223,4 +219,3 @@ async function downloadImage() {
 
 </body>
 </html>
-        
