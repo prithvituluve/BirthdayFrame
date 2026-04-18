@@ -6,7 +6,6 @@
 <title>Birthday Frame Generator</title>
 
 <style>
-    /* ✅ FONT FIXED (match filename exactly: myfont.ttf) */
     @font-face {
         font-family: 'MyFont';
         src: url('./fonts/myfont.ttf') format('truetype');
@@ -32,19 +31,20 @@
         border: 2px solid #333;
     }
 
-    /* ✅ NO CROPPING FIX */
     #userImage {
         position: absolute;
         top: 22%;
         left: 15%;
         width: 70%;
         height: 58%;
-        object-fit: contain; /* 🔥 changed from cover */
+        object-fit: contain;
+        object-position: center;
         background: black;
         border-radius: 30px;
         z-index: 1;
         cursor: move;
         user-select: none;
+        transform-origin: center center;
     }
 
     #frame {
@@ -57,7 +57,6 @@
         pointer-events: none;
     }
 
-    /* ✅ FONT APPLIED */
     #nameText {
         position: absolute;
         bottom: 30px;
@@ -82,7 +81,7 @@
 <div class="controls">
     <input type="file" id="upload" accept="image/*"><br>
     <input type="text" id="nameInput" placeholder="Enter Name"><br>
-    
+
     Zoom:
     <input type="range" id="zoom" min="0.1" max="5" step="0.01" value="1">
     <br>
@@ -104,17 +103,16 @@ const nameInput = document.getElementById("nameInput");
 const nameText = document.getElementById("nameText");
 const frame = document.getElementById("frame");
 const zoomSlider = document.getElementById("zoom");
+const container = document.getElementById("container");
 
 let scale = 1;
 let posX = 0, posY = 0;
 let dragging = false, startX, startY;
 
-// Ensure font loaded
 document.fonts.ready.then(() => {
     console.log("Font loaded");
 });
 
-// Upload Image
 upload.addEventListener("change", (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -122,7 +120,9 @@ upload.addEventListener("change", (e) => {
         reader.onload = (event) => {
             userImage.src = event.target.result;
             userImage.style.display = "block";
-            posX = 0; posY = 0; scale = 1;
+            posX = 0;
+            posY = 0;
+            scale = 1;
             zoomSlider.value = 1;
             updateTransform();
         };
@@ -130,12 +130,10 @@ upload.addEventListener("change", (e) => {
     }
 });
 
-// Name input
 nameInput.addEventListener("input", () => {
     nameText.innerText = nameInput.value;
 });
 
-// Dragging
 userImage.addEventListener("mousedown", (e) => {
     dragging = true;
     startX = e.clientX - posX;
@@ -151,7 +149,6 @@ document.addEventListener("mousemove", (e) => {
     updateTransform();
 });
 
-// Zoom
 zoomSlider.addEventListener("input", () => {
     scale = parseFloat(zoomSlider.value);
     updateTransform();
@@ -161,7 +158,23 @@ function updateTransform() {
     userImage.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
 }
 
-// ✅ DOWNLOAD (MATCH PREVIEW)
+function getContainSize(imgWidth, imgHeight, boxWidth, boxHeight) {
+    const imgRatio = imgWidth / imgHeight;
+    const boxRatio = boxWidth / boxHeight;
+
+    let drawWidth, drawHeight;
+
+    if (imgRatio > boxRatio) {
+        drawWidth = boxWidth;
+        drawHeight = boxWidth / imgRatio;
+    } else {
+        drawHeight = boxHeight;
+        drawWidth = boxHeight * imgRatio;
+    }
+
+    return { drawWidth, drawHeight };
+}
+
 async function downloadImage() {
     if (!userImage.src) {
         alert("Please upload an image first");
@@ -184,36 +197,73 @@ async function downloadImage() {
 
     const imgX = WIDTH * 0.15;
     const imgY = HEIGHT * 0.22;
-    const imgW = WIDTH * 0.70;
-    const imgH = HEIGHT * 0.58;
+    const imgBoxW = WIDTH * 0.70;
+    const imgBoxH = HEIGHT * 0.58;
+
+    const previewRect = container.getBoundingClientRect();
+    const previewW = previewRect.width;
+    const previewH = previewRect.height;
+
+    const previewImgBoxW = previewW * 0.70;
+    const previewImgBoxH = previewH * 0.58;
+
+    const moveScaleX = imgBoxW / previewImgBoxW;
+    const moveScaleY = imgBoxH / previewImgBoxH;
+
+    const naturalW = userImage.naturalWidth;
+    const naturalH = userImage.naturalHeight;
+
+    const baseFit = getContainSize(naturalW, naturalH, imgBoxW, imgBoxH);
+
+    const finalW = baseFit.drawWidth * scale;
+    const finalH = baseFit.drawHeight * scale;
+
+    const centerX = imgX + imgBoxW / 2 + posX * moveScaleX;
+    const centerY = imgY + imgBoxH / 2 + posY * moveScaleY;
 
     ctx.save();
 
-    ctx.translate(
-        imgX + imgW / 2 + posX * (WIDTH / 500),
-        imgY + imgH / 2 + posY * (HEIGHT / 625)
+    const radius = 40;
+    roundedRect(ctx, imgX, imgY, imgBoxW, imgBoxH, radius);
+    ctx.clip();
+
+    ctx.drawImage(
+        userImage,
+        centerX - finalW / 2,
+        centerY - finalH / 2,
+        finalW,
+        finalH
     );
 
-    ctx.scale(scale, scale);
-
-    ctx.drawImage(userImage, -imgW/2, -imgH/2, imgW, imgH);
     ctx.restore();
 
     ctx.drawImage(frame, 0, 0, WIDTH, HEIGHT);
 
-    // ✅ FONT FIX (NO bold mismatch)
     ctx.fillStyle = "white";
     ctx.font = "100px MyFont";
     ctx.textAlign = "center";
     ctx.shadowColor = "black";
     ctx.shadowBlur = 15;
-
     ctx.fillText(nameInput.value, WIDTH / 2, HEIGHT - 120);
 
     const link = document.createElement("a");
     link.download = "birthday_card.png";
     link.href = canvas.toDataURL("image/png");
     link.click();
+}
+
+function roundedRect(ctx, x, y, width, height, radius) {
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
 }
 </script>
 
