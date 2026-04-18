@@ -108,18 +108,21 @@
     input[type="text"],
     input[type="file"],
     input[type="range"],
+    select,
     button {
         width: 100%;
     }
 
     input[type="text"],
+    select,
     button {
         padding: 10px;
         border-radius: 10px;
         border: 1px solid #444;
     }
 
-    input[type="text"] {
+    input[type="text"],
+    select {
         background: #0f0f0f;
         color: white;
     }
@@ -170,6 +173,16 @@
         <input type="range" id="textSize" min="20" max="80" step="1" value="35">
     </div>
 
+    <div class="control-group">
+        <label for="frameSelect">Choose Frame</label>
+        <select id="frameSelect">
+            <option value="./Birthday.png">Birthday Frame</option>
+            <option value="./birthday1.png">Birthday 1</option>
+            <option value="./birthday2.png">Birthday 2</option>
+            <option value="./birthday3.png">Birthday 3</option>
+        </select>
+    </div>
+
     <button id="downloadBtn" type="button">Download HD Image</button>
     <div class="hint">Drag the photo with mouse or finger to adjust it inside the frame.</div>
 </div>
@@ -188,6 +201,7 @@ const userImage = document.getElementById("userImage");
 const nameInput = document.getElementById("nameInput");
 const nameText = document.getElementById("nameText");
 const frame = document.getElementById("frame");
+const frameSelect = document.getElementById("frameSelect");
 const zoomSlider = document.getElementById("zoom");
 const textSizeSlider = document.getElementById("textSize");
 const container = document.getElementById("container");
@@ -208,9 +222,7 @@ document.fonts.ready.then(() => {
 
 upload.addEventListener("change", (e) => {
     const file = e.target.files[0];
-    if (!file) {
-        return;
-    }
+    if (!file) return;
 
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -234,10 +246,12 @@ textSizeSlider.addEventListener("input", () => {
     nameText.style.fontSize = textSize + "px";
 });
 
+frameSelect.addEventListener("change", () => {
+    frame.src = frameSelect.value;
+});
+
 function startDrag(e) {
-    if (!userImage.src) {
-        return;
-    }
+    if (!userImage.src) return;
 
     dragging = true;
     pointerId = e.pointerId;
@@ -248,9 +262,7 @@ function startDrag(e) {
 }
 
 function moveDrag(e) {
-    if (!dragging || e.pointerId !== pointerId) {
-        return;
-    }
+    if (!dragging || e.pointerId !== pointerId) return;
 
     posX = e.clientX - startX;
     posY = e.clientY - startY;
@@ -258,9 +270,7 @@ function moveDrag(e) {
 }
 
 function endDrag(e) {
-    if (e.pointerId !== pointerId) {
-        return;
-    }
+    if (e.pointerId !== pointerId) return;
 
     dragging = false;
     userImage.classList.remove("dragging");
